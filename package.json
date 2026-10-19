@@ -21,7 +21,10 @@
     "test": "node --test test/*.test.js",
     "coverage": "node --test --experimental-test-coverage --test-coverage-exclude='test/**' test/*.test.js"
   },
-  "repository": "github:streampack-dev/clientjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/streampack-dev/clientjs.git"
+  },
   "publishConfig": {
     "registry": "https://nexus.streampack.dev/repository/npm-hosted/"
   },
