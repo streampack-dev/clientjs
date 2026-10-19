@@ -19,6 +19,9 @@ release level="patch": _on-main
     set -euo pipefail
     level="{{level}}"
     files=(package.json README.md)
+    # npm version writes the version into the lockfile too: commit it with the rest, and restore it
+    # if the release fails, or the release leaves it changed and the next one refuses to start.
+    if git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then files+=(package-lock.json); fi
     case "$level" in
       patch|minor|major) ;;
       *) echo "release level must be one of: patch, minor, major" >&2; exit 1 ;;
