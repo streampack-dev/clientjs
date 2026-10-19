@@ -53,7 +53,14 @@ release level="patch": _on-main
       exit 1
     fi
 
-    npm test >/dev/null
+    # Install what the lockfile pins first, so a stale node_modules can't fail (or pass) the tests.
+    if [[ " ${files[*]} " == *" package-lock.json "* ]]; then npm ci --silent --no-audit --no-fund; fi
+    # Quiet when they pass; their output when they fail, so a refused release says why.
+    if ! tests="$(npm test 2>&1)"; then
+      printf '%s\n' "$tests" | tail -40 >&2
+      echo "The tests failed; nothing was released." >&2
+      exit 1
+    fi
 
     echo "Releasing $current -> $next"
     trap 'status=$?; if [[ $status -ne 0 && -z "${committed:-}" ]]; then git checkout -- "${files[@]}"; echo "Release failed; package.json restored to $current." >&2; fi' EXIT
