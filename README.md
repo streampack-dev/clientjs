@@ -13,11 +13,11 @@ end keeps its own markup, styles and forms, and calls these for what must be the
 |---|---|
 | [`anchors`](#anchors) | The passage of a post that a comment quotes (streampack#256): a selection to an anchor, an anchor back to a Range, and where callouts go. |
 | [`annotate`](#annotate) | The comment-on-a-passage interface built on `anchors`: the button beside a selection, the quote in the form, and the callouts or markers, linked both ways. |
+| [`atlas`](#atlas) | The Atlas map, moved about: zoom, pan, find, names that never overlap, pins, and framing a place. |
 | [`zone`](#zone) | The reader's time zone: the `bcn-tz` cookie, times said again in it, and date fields moved to it, in each site's own words. |
 | [`mermaid`](#mermaid) | An editor preview's Mermaid diagrams, drawn with Pele into the markup the API writes (streampack#252). |
 
-More parts are planned in [ui-pudl#252](https://github.com/streampack-dev/ui-pudl/issues/252):
-the Atlas map.
+These are the parts [ui-pudl#252](https://github.com/streampack-dev/ui-pudl/issues/252) planned.
 
 ## Using it in a front end
 
@@ -133,6 +133,38 @@ const passages = annotate({
   refuse: (post, message) => { post.querySelector("[data-anchor-note]").textContent = message; },
 });
 document.querySelectorAll(".post-article").forEach(passages.setUp);
+```
+
+## atlas
+
+The servers draw the Atlas as SVG: `[data-atlas] svg.atlas-map`, with a `viewBox` and the whole
+map's box in `data-world`. Each place is `a.place[data-tag][data-x][data-y]`, each pin `a.pin`
+in a `g.pins[data-for]`, and each region name `text.region-name[data-size]`. Without script it's a
+picture with links in it. `atlas(options)` sets up the listeners once and returns a controller;
+call `start()` when a map is shown, `start(true)` when the same map gets a new view, and
+`resize()` for a new size.
+
+- **Zoom:** the wheel, a pinch, and `[data-atlas-zoom="in"|"out"|"fit"]`, between `MIN_K` and
+  `MAX_K` pixels a unit. `--u` on the SVG is one screen pixel in world units, and `data-zoom`
+  (`far`, `mid`, `near`), `data-tiny` and `data-close` say how much shows.
+- **Pan:** a drag. A drag never follows the link it started on.
+- **Names:** placed biggest region first at each zoom. One that would overlap is `.crowded`.
+- **Places:** a click marks the place `.here` (and its pins) and calls `onChoose(place, event)`
+  before the link is followed. Pointing at one shows its pins (`.shown`). Tabbing to one off
+  screen brings it into view.
+- **Find:** `form.atlas-find`'s `at` frames the place, focuses it, drops `.atlas-missed`, and
+  sets `?at=` in the address, without a reload. A name not on the map is left to the server.
+- **What's new:** `a[data-atlas-frame="<tag>"]` frames its place in place, and sets `?at=`.
+
+The controller also gives a site `svg`, `scale()`, `fly(box)`, `boxAt(x, y, k)`, `placeEl(tag)`,
+`at(place)`, `here(tag)` and `frame(place)` to build on (ui-pudl opens a place's window beside it).
+
+```js
+import { atlas } from "@streampack-dev/clientjs/atlas";
+
+const map = atlas({ onChoose: (place) => console.log("going to", place.getAttribute("href")) });
+map.start();
+addEventListener("resize", () => map.resize());
 ```
 
 ## zone
