@@ -1,6 +1,6 @@
 {
   "name": "@streampack-dev/clientjs",
-  "version": "0.1.0-SNAPSHOT",
+  "version": "0.1.0",
   "description": "Browser code that streampack's front ends share: comment anchors, and more to come",
   "license": "MIT",
   "type": "module",
