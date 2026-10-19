@@ -1,6 +1,6 @@
 {
   "name": "@streampack-dev/clientjs",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Browser code that streampack's front ends share: comment anchors and their interface, Mermaid diagrams, and the reader's time zone",
   "license": "MIT",
   "type": "module",
