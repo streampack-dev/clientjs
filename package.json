@@ -1,7 +1,7 @@
 {
   "name": "@streampack-dev/clientjs",
   "version": "0.2.2",
-  "description": "Browser code that streampack's front ends share: comment anchors and their interface, Mermaid diagrams, and the reader's time zone",
+  "description": "Browser code that streampack's front ends share: comment anchors and their interface, Mermaid diagrams, the reader's time zone, and the Atlas map",
   "license": "MIT",
   "type": "module",
   "exports": {
@@ -20,6 +20,10 @@
     "./zone": {
       "types": "./src/zone.d.ts",
       "default": "./src/zone.js"
+    },
+    "./atlas": {
+      "types": "./src/atlas.d.ts",
+      "default": "./src/atlas.js"
     }
   },
   "files": [
