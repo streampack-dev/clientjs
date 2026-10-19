@@ -1,7 +1,7 @@
 {
   "name": "@streampack-dev/clientjs",
   "version": "0.2.0",
-  "description": "Browser code that streampack's front ends share: comment anchors and Mermaid diagrams",
+  "description": "Browser code that streampack's front ends share: comment anchors and their interface, and Mermaid diagrams",
   "license": "MIT",
   "type": "module",
   "exports": {
@@ -12,6 +12,10 @@
     "./mermaid": {
       "types": "./src/mermaid.d.ts",
       "default": "./src/mermaid.js"
+    },
+    "./annotate": {
+      "types": "./src/annotate.d.ts",
+      "default": "./src/annotate.js"
     }
   },
   "files": [

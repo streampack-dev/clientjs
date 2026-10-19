@@ -12,10 +12,11 @@ end keeps its own markup, styles and forms, and calls these for what must be the
 | Part | What it does |
 |---|---|
 | [`anchors`](#anchors) | The passage of a post that a comment quotes (streampack#256): a selection to an anchor, an anchor back to a Range, and where callouts go. |
+| [`annotate`](#annotate) | The comment-on-a-passage interface built on `anchors`: the button beside a selection, the quote in the form, and the callouts or markers, linked both ways. |
 | [`mermaid`](#mermaid) | An editor preview's Mermaid diagrams, drawn with Pele into the markup the API writes (streampack#252). |
 
 More parts are planned in [ui-pudl#252](https://github.com/streampack-dev/ui-pudl/issues/252):
-the comment-on-a-passage interface, the reader's time zone and the Atlas map.
+the reader's time zone and the Atlas map.
 
 ## Using it in a front end
 
@@ -90,6 +91,47 @@ const spots = place(found.map((p) => ({
   top: p.range.getBoundingClientRect().top - margin.getBoundingClientRect().top,
   height: calloutFor(p).offsetHeight,
 })));
+```
+
+## annotate
+
+The interface for comments on a passage, on top of `anchors`. A site calls `annotate(options)`
+once, with its selectors, then `setUp(container)` for each post shown (a page, a window), as
+often as it likes.
+
+- **Writing.** A selection in the post's body shows `.anchor-ask` beside it. Its
+  `button[data-anchor-ask]` keeps the selection when pressed, stays offered while focused from
+  the keyboard, fills the form's `[data-anchor-field]` inputs, shows `[data-comment-quote]`, and
+  moves focus to the textarea. `[data-comment-quote-remove]` takes the quote out. A selection
+  that's empty or too long goes to `refuse(container, message)`, which is called with `""` when
+  the offer goes.
+- **Reading.** Each top-level comment's `.comment-anchor-data` (`data-exact`, `data-prefix`,
+  `data-suffix`, `data-found`) is found in the body and marked. With `marginRem` (16) of room to the
+  right of the container, the passages get callouts in an `.anchor-margin` beside it, placed level
+  and apart; without it, a `button.anchor-marker` follows each passage's block. Callouts, markers
+  and comments link to one another, and focus moves without changing the address. The container
+  never moves for them.
+
+| Option | What it is |
+|---|---|
+| `container` | A post's container: holds the body, comments and form (`position: relative`). |
+| `body` | The post's body, within the container. |
+| `comment` | A top-level comment (`id="comment-<id>"`), within the container. |
+| `form` | The new-comment form, within the container. |
+| `meta`, `author` | A comment's meta line, where "Show the passage" goes, and its author's name. |
+| `ignore` | What the site adds to the body that isn't its text. |
+| `marginRem`, `linkClass`, `refuse`, `document` | The room callouts need, classes for the links, how a refusal is shown, and the document. |
+
+```js
+import { annotate } from "@streampack-dev/clientjs/annotate";
+
+const passages = annotate({
+  container: ".post-article", body: ":scope > [data-anchor-body]",
+  comment: ".comment-list > article.comment", form: "form.comment-form",
+  meta: ":scope > .meta", author: ":scope > .meta .comment-author",
+  refuse: (post, message) => { post.querySelector("[data-anchor-note]").textContent = message; },
+});
+document.querySelectorAll(".post-article").forEach(passages.setUp);
 ```
 
 ## mermaid
