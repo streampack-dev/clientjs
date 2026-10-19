@@ -1,0 +1,27 @@
+{
+  "name": "@streampack-dev/clientjs",
+  "version": "0.1.0-SNAPSHOT",
+  "description": "Browser code that streampack's front ends share: comment anchors, and more to come",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./anchors": {
+      "types": "./src/anchors.d.ts",
+      "default": "./src/anchors.js"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-exclude='test/**' test/*.test.js"
+  },
+  "repository": "github:streampack-dev/clientjs",
+  "publishConfig": {
+    "registry": "https://nexus.streampack.dev/repository/npm-hosted/"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.3"
+  }
+}
