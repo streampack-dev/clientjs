@@ -12,9 +12,10 @@ end keeps its own markup, styles and forms, and calls these for what must be the
 | Part | What it does |
 |---|---|
 | [`anchors`](#anchors) | The passage of a post that a comment quotes (streampack#256): a selection to an anchor, an anchor back to a Range, and where callouts go. |
+| [`mermaid`](#mermaid) | An editor preview's Mermaid diagrams, drawn with Pele into the markup the API writes (streampack#252). |
 
 More parts are planned in [ui-pudl#252](https://github.com/streampack-dev/ui-pudl/issues/252):
-Mermaid previews, the reader's time zone and the Atlas map.
+the comment-on-a-passage interface, the reader's time zone and the Atlas map.
 
 ## Using it in a front end
 
@@ -90,6 +91,42 @@ const spots = place(found.map((p) => ({
   height: calloutFor(p).offsetHeight,
 })));
 ```
+
+## mermaid
+
+streampack draws a published post's Mermaid diagrams when the post is saved, with [Pele](https://pele.run), and
+stores the drawing in the post's HTML. An editor's preview is rendered by the front end, so its
+```` ```mermaid ```` blocks are still code. This module draws them the same way: the same Pele
+options (links and images off, the same limits), the same fonts (IBM Plex Sans and Mono, waited for
+so labels are measured in them), and the same markup, which streampack's
+[`docs/reference/diagram-html.md`](https://github.com/streampack-dev/streampack/blob/main/docs/reference/diagram-html.md)
+describes:
+
+- a drawn diagram is `<figure class="mermaid">` with the SVG, and the source in a closed `<details>`;
+- a refused one is `<figure class="mermaid mermaid-refused">` with the source and a caption,
+  "This diagram wasn't drawn: …", in the words the API uses.
+
+Pele isn't a dependency: pass it in, at the version streampack bundles. Finding the preview's
+blocks, and noticing new ones, stays the front end's.
+
+| Export | What it is |
+|---|---|
+| `draw(blocks, loadPele, { bodyOf, prefix })` | Draws the `code.language-mermaid` blocks, each replacing its `<pre>`. `loadPele` is called once there's a block. Blocks are claimed (`data-mermaid="pending"`) so a second call doesn't take them; past 50 in one body (`bodyOf`) they're `skipped`; if Pele won't load they're `unavailable`. Ids start with `prefix` (`preview`). |
+| `figureFor(pele, source, idPrefix, doc)` | One diagram's figure, drawn or refused. |
+| `reason(error)` | Pele's error as the API's one line. |
+| `fontsReady(doc)` | Waits for `FACES`; a face that won't load is skipped. |
+| `OPTIONS`, `FACES`, `MAX_DIAGRAMS` | The API's Pele options, the eight Plex faces, and 50. |
+
+```js
+import { draw } from "@streampack-dev/clientjs/mermaid";
+
+const blocks = document.querySelectorAll(".preview pre > code.language-mermaid:not([data-mermaid])");
+draw(blocks, () => import("pele"), { bodyOf: (code) => code.closest(".preview") });
+```
+
+`test/fixtures/mermaid/published.html` is the API's own rendering of a drawn diagram and a refused
+one, from streampack's `MermaidRenderer`; the tests check this module's figures have its shape and
+its words. When streampack moves to a new Pele, move the dev dependency and the fixture together.
 
 ## Development
 
