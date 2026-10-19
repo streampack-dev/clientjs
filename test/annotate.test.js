@@ -270,6 +270,19 @@ describe('writing', () => {
     assert.equal(ask.style.top, '124px');
   });
 
+  it('offers for a selection made before it was set up', async () => {
+    dom = new JSDOM(`<!doctype html><body><main id="stage"><div class="article" id="art-0"><div class="article-body">${POST}</div>${SIGNED_IN}</div></main></body>`, { pretendToBeVisual: true });
+    doc = dom.window.document;
+    dom.window.Range.prototype.getBoundingClientRect = () => ({ top: 100, bottom: 120, left: 10, right: 60 });
+    dom.window.Range.prototype.getClientRects = function () { return [this.getBoundingClientRect()]; };
+    const range = doc.createRange();
+    range.selectNodeContents(doc.querySelector('.article-body p'));
+    doc.getSelection().addRange(range);
+    annotate({ container: '.article', body: ':scope > .article-body', comment: 'li.comment', form: 'form.comment-new', meta: '.meta', document: doc });
+    await frames();
+    assert.equal(doc.querySelector('.anchor-ask').hidden, false);
+  });
+
   it('quotes the selection in the form and moves to the box', async () => {
     page().setUp(art());
     select('plain', 'link');

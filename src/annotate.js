@@ -117,11 +117,14 @@ export function annotate(options) {
   }
 
   let offerQueued = false;
-  doc.addEventListener('selectionchange', () => {
+  const offerSoon = () => {
     if (offerQueued) return;
     offerQueued = true;
     win.requestAnimationFrame(() => { offerQueued = false; offer(); });
-  });
+  };
+  doc.addEventListener('selectionchange', offerSoon);
+  // A site may load this after the reader has already selected something: offer for that too.
+  offerSoon();
 
   // Pressing the button mustn't clear the selection it's about.
   doc.addEventListener('pointerdown', (e) => {
