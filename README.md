@@ -13,10 +13,11 @@ end keeps its own markup, styles and forms, and calls these for what must be the
 |---|---|
 | [`anchors`](#anchors) | The passage of a post that a comment quotes (streampack#256): a selection to an anchor, an anchor back to a Range, and where callouts go. |
 | [`annotate`](#annotate) | The comment-on-a-passage interface built on `anchors`: the button beside a selection, the quote in the form, and the callouts or markers, linked both ways. |
+| [`zone`](#zone) | The reader's time zone: the `bcn-tz` cookie, times said again in it, and date fields moved to it, in each site's own words. |
 | [`mermaid`](#mermaid) | An editor preview's Mermaid diagrams, drawn with Pele into the markup the API writes (streampack#252). |
 
 More parts are planned in [ui-pudl#252](https://github.com/streampack-dev/ui-pudl/issues/252):
-the reader's time zone and the Atlas map.
+the Atlas map.
 
 ## Using it in a front end
 
@@ -132,6 +133,34 @@ const passages = annotate({
   refuse: (post, message) => { post.querySelector("[data-anchor-note]").textContent = message; },
 });
 document.querySelectorAll(".post-article").forEach(passages.setUp);
+```
+
+## zone
+
+The servers say times in the zone the `bcn-tz` cookie names, and in UTC without one. This puts the
+browser's zone in the cookie, so the next page is said in it, and says again in it each time drawn
+in another zone, so even a first visit reads local. Each site keeps its own wording, to match how
+its server writes a time.
+
+| Export | What it is |
+|---|---|
+| `browserZone()` | The browser's zone, such as `America/New_York`, or null. |
+| `rememberZone(zone, doc)` | Puts it in `bcn-tz` for a year, unless it's there: the name as it is, not encoded, and only for names of letters, digits, `/`, `_`, `+` and `-`. |
+| `localize(root, { zone, said, tooltip })` | Each `time[data-local]` gets `said(date, form, zone)` as its text (`form` is its `data-local` value), each `time[data-local-title]` gets `tooltip(date, zone)` as its title, and each date field is moved to the zone. Each is marked `data-local-zone` and skipped after, so a server can mark the times it already drew in the reader's zone. |
+| `parts(date, options, zone)`, `wallClock(date, zone)`, `zoneName(date, zone)` | A date's parts in a zone, its datetime-local value (`2026-10-20T10:30`), and the zone's short name (`EDT`), for a site's wording. |
+
+A date field shown in another zone is `<input type="datetime-local" data-zone-field="<name>"
+data-instant="<UTC instant>">`, where `<name>` is the form's hidden input that carries the zone it's
+read in, with `[data-zone-label="<the field's id>"]` saying that zone. The field moves to this zone's
+clock, unless the reader has typed in it (its value no longer matches `data-shown`), and the hidden
+input says this zone, so what's saved is what the reader saw.
+
+```js
+import { browserZone, localize, rememberZone, zoneName } from "@streampack-dev/clientjs/zone";
+
+const zone = browserZone() || "UTC";
+rememberZone(zone);
+localize(document, { zone, said: (date, form, z) => `${date.toLocaleString("en-US", { timeZone: z })} ${zoneName(date, z)}` });
 ```
 
 ## mermaid
