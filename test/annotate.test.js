@@ -57,7 +57,7 @@ function page({ signedIn = true, comments = COMMENTS, wide = true, articles = 1 
     a.getBoundingClientRect = () => ({ top: 0, left: wide ? 350 : 0, right: wide ? 1050 : 700, width: 700, height: 900, bottom: 900 });
   }
   refusals = [];
-  return annotate({
+  return page.last = annotate({
     container: '.article',
     body: ':scope > .article-body',
     comment: '.comments li.comment',
@@ -153,6 +153,66 @@ describe('reading, with room beside the post', () => {
     await frames();
     assert.equal(art().querySelectorAll('.anchor-callout').length, 2);
     assert.equal(doc.querySelectorAll('#comment-a1 .comment-anchor-link').length, 1);
+  });
+});
+
+describe('long comments in callouts', () => {
+  const LONG_A = 'To be fair to Zig, it has a commitment to its definition of correctness, and feels that its ' +
+    'users would rather be correct than incorrect, which is a choice that has costs and benefits both.';
+  const LONG_C = 'This one is long too, long enough that a fixed cut would land in the middle of a word, but it ' +
+    'is the last callout in the margin, so there is room below it for every word it has.';
+
+  beforeEach(async () => {
+    page({
+      comments: [
+        comment('a1', 'Ann', LONG_A, { exact: 'first quoted words' }),
+        comment('a3', 'Cy', LONG_C, { exact: 'second' }),
+      ].join(''),
+    });
+    // jsdom has no layout: a callout is 20px a line of 30 characters, and the margin is 900px.
+    Object.defineProperty(dom.window.HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        if (this.classList.contains('anchor-margin')) return 900;
+        if (this.classList.contains('anchor-callout')) return Math.ceil(this.textContent.length / 30) * 20;
+        return 0;
+      },
+    });
+  });
+
+  async function drawn() {
+    page.last.setUp(art());
+    await frames();
+  }
+
+  it('cuts a comment that would reach the next callout\'s place at a word, and says so', async () => {
+    await drawn();
+    const link = doc.querySelector('#anchor-callout-a1 .anchor-callout-link');
+    const shown = link.textContent.replace(/^Ann /, '');
+    assert.ok(shown.endsWith('…'), shown);
+    const kept = shown.slice(0, -1);
+    assert.ok(LONG_A.startsWith(kept), shown);
+    assert.match(LONG_A[kept.length], /\s/, `cut mid-word: ${shown}`);
+    assert.equal(link.getAttribute('title'), LONG_A);
+    const more = doc.querySelector('#anchor-callout-a1 .anchor-callout-more');
+    assert.equal(more.textContent, 'Read the rest');
+    assert.equal(more.getAttribute('href'), '#comment-a1');
+  });
+
+  it('shows a comment whole when its callout fits before the next one\'s place', async () => {
+    await drawn();
+    const link = doc.querySelector('#anchor-callout-a3 .anchor-callout-link');
+    assert.equal(link.textContent, `Cy ${LONG_C}`);
+    assert.equal(link.getAttribute('title'), null);
+    assert.equal(doc.querySelector('#anchor-callout-a3 .anchor-callout-more'), null);
+  });
+
+  it('keeps the links between a cut callout and its comment', async () => {
+    await drawn();
+    doc.querySelector('#comment-a1 .comment-anchor-link').click();
+    assert.equal(doc.activeElement.id, 'anchor-callout-a1');
+    doc.querySelector('#anchor-callout-a1 .anchor-callout-more').click();
+    assert.equal(doc.activeElement.id, 'comment-a1');
   });
 });
 
