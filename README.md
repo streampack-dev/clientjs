@@ -112,6 +112,11 @@ often as it likes.
   and apart; without it, a `button.anchor-marker` follows each passage's block. Callouts, markers
   and comments link to one another, and focus moves without changing the address. The container
   never moves for them.
+- **Long comments.** A callout shows its comments whole when it ends before the next callout's own
+  place (or the margin's end). Otherwise each long comment is cut at a word, near 140 characters,
+  with "…"; its link's `title` holds the whole text, and an `a.anchor-callout-more` ("Read the
+  rest") after it goes to the comment. A `title` doesn't show on touch or keyboard focus, so the
+  visible link is what says the text was cut.
 
 | Option | What it is |
 |---|---|

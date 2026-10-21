@@ -26,7 +26,8 @@
  * - in each top-level comment, a direct child `.comment-anchor-data` with `data-exact`,
  *   `data-prefix`, `data-suffix` and `data-found` ("true" when the passage is still in the post).
  *
- * What it adds: `.anchor-margin` holding `aside.anchor-callout` (`a.anchor-callout-link`,
+ * What it adds: `.anchor-margin` holding `aside.anchor-callout` (`a.anchor-callout-link`, an
+ * `a.anchor-callout-more` "Read the rest" after a link whose comment is cut, and
  * `a.anchor-callout-count`), or `button.anchor-marker` after a block; `a.comment-anchor-link` in a
  * comment's meta line; and the class `anchor-callout-shown` on a comment whose callout shows.
  *
@@ -34,6 +35,8 @@
  */
 import { MAX_EXACT, anchorFrom, locate, mark, place, textOf } from './anchors.js';
 
+/* A callout shows a comment whole when it fits before the next callout's own place (or the end
+   of the margin). One that doesn't is cut to about this many characters, at a word. */
 const EXCERPT = 140;
 
 /**
@@ -192,15 +195,23 @@ export function annotate(options) {
     };
   }
 
-  /* The comment's own words, without its quote, cut to a line or two. */
-  function excerpt(comment) {
+  /* The comment's own words, without its quote, on one line. */
+  function wordsOf(comment) {
     const body = comment.querySelector(':scope > .comment-body');
     if (!body) return '';
     const copy = body.cloneNode(true);
     const quote = copy.querySelector(':scope > blockquote.comment-anchor');
     if (quote) quote.remove();
-    const text = (copy.textContent || '').replace(/\s+/g, ' ').trim();
-    return text.length > EXCERPT ? `${text.slice(0, EXCERPT - 1).trimEnd()}…` : text;
+    return (copy.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+
+  /* [text] cut to EXCERPT characters or fewer, at the end of a word, with "…"; or null when it
+     is short enough already. A single word longer than that is cut where it must be. */
+  function cut(text) {
+    if (text.length <= EXCERPT) return null;
+    const space = text.lastIndexOf(' ', EXCERPT - 1);
+    const end = space > 0 ? space : EXCERPT - 1;
+    return `${text.slice(0, end).trimEnd()}…`;
   }
 
   function authorOf(comment) {
@@ -238,17 +249,33 @@ export function annotate(options) {
     if (meta) meta.append(' ', link);
   }
 
-  function callout(passage, group) {
+  /* The comments shown in a passage's callout: the first two. */
+  const shownIn = (group) => group.slice(0, 2);
+
+  /* Whether a callout for [group] would be shorter cut. */
+  const cuttable = (group) => shownIn(group).some((comment) => cut(wordsOf(comment)) !== null);
+
+  /* A passage's callout. [short] cuts each long comment at a word, with its whole text as the
+     link's title and a "Read the rest" link to it, so that a cut is plainly a cut. */
+  function callout(passage, group, short = false) {
     const aside = doc.createElement('aside');
     aside.className = 'anchor-callout';
     aside.id = `anchor-callout-${passage.ids[0]}`;
     aside.setAttribute('aria-label', `${countLabel(group.length)} on a passage`);
-    for (const comment of group.slice(0, 2)) {
+    for (const comment of shownIn(group)) {
       const link = linkTo(comment, 'anchor-callout-link');
       const who = doc.createElement('strong');
       who.textContent = authorOf(comment);
-      link.append(who, ` ${excerpt(comment)}`);
+      const words = wordsOf(comment);
+      const shortened = short ? cut(words) : null;
+      link.append(who, ` ${shortened ?? words}`);
       aside.append(link);
+      if (shortened) {
+        link.title = words;
+        const more = linkTo(comment, 'anchor-callout-more');
+        more.textContent = 'Read the rest';
+        aside.append(' ', more);
+      }
     }
     if (group.length > 1) {
       const count = linkTo(group[0], 'anchor-callout-count');
@@ -305,18 +332,33 @@ export function annotate(options) {
       const margin = doc.createElement('div');
       margin.className = 'anchor-margin';
       container.append(margin);
+      const gap = remPx() / 2;
+      const top = margin.getBoundingClientRect().top;
       const items = passages.map((p) => {
         const group = groupOf(p);
         const el = callout(p, group);
         margin.append(el);
-        for (const comment of group) {
-          comment.classList.add('anchor-callout-shown');
-          linkBack(comment, el);
-        }
-        return { el, range: p.range };
+        return { p, group, el, wants: p.range.getBoundingClientRect().top - top };
       });
-      const top = margin.getBoundingClientRect().top;
-      const spots = place(items.map((it, i) => ({ key: String(i), top: it.range.getBoundingClientRect().top - top, height: it.el.offsetHeight })), { gap: remPx() / 2 });
+      // Each callout shows its comments whole if it ends before the next callout's own place (or
+      // the margin's end); otherwise it's drawn again with the long ones cut.
+      const order = items.map((it, i) => i).sort((x, y) => items[x].wants - items[y].wants || x - y);
+      order.forEach((i, k) => {
+        const it = items[i];
+        const next = k + 1 < order.length ? items[order[k + 1]].wants - gap : margin.offsetHeight;
+        if (it.el.offsetHeight > next - it.wants && cuttable(it.group)) {
+          const short = callout(it.p, it.group, true);
+          it.el.replaceWith(short);
+          it.el = short;
+        }
+      });
+      for (const it of items) {
+        for (const comment of it.group) {
+          comment.classList.add('anchor-callout-shown');
+          linkBack(comment, it.el);
+        }
+      }
+      const spots = place(items.map((it, i) => ({ key: String(i), top: it.wants, height: it.el.offsetHeight })), { gap });
       spots.forEach((s, i) => { items[i].el.style.top = `${s.top}px`; });
     } else {
       for (const p of passages) {
