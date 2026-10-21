@@ -16,6 +16,7 @@ end keeps its own markup, styles and forms, and calls these for what must be the
 | [`atlas`](#atlas) | The Atlas map, moved about: zoom, pan, find, names that never overlap, pins, and framing a place. |
 | [`zone`](#zone) | The reader's time zone: the `bcn-tz` cookie, times said again in it, and date fields moved to it, in each site's own words. |
 | [`mermaid`](#mermaid) | An editor preview's Mermaid diagrams, drawn with Pele into the markup the API writes (streampack#252). |
+| [`sections`](#sections) | Links to a post's sections (streampack#274): a bare `#name` finds its `section-` heading, and each heading gets a `#` link. |
 
 These are the parts [ui-pudl#252](https://github.com/streampack-dev/ui-pudl/issues/252) planned.
 
@@ -125,7 +126,7 @@ often as it likes.
 | `comment` | A top-level comment (`id="comment-<id>"`), within the container. |
 | `form` | The new-comment form, within the container. |
 | `meta`, `author` | A comment's meta line, where "Show the passage" goes, and its author's name. |
-| `ignore` | What the site adds to the body that isn't its text. |
+| `ignore` | What the site adds to the body that isn't its text. `.anchor-marker` and `.section-link` are always left out. |
 | `marginRem`, `linkClass`, `refuse`, `document` | The room callouts need, classes for the links, how a refusal is shown, and the document. |
 
 ```js
@@ -235,6 +236,33 @@ draw(blocks, () => import("pele"), { bodyOf: (code) => code.closest(".preview") 
 `test/fixtures/mermaid/published.html` is the API's own rendering of a drawn diagram and a refused
 one, from streampack's `MermaidRenderer`; the tests check this module's figures have its shape and
 its words. When streampack moves to a new Pele, move the dev dependency and the fixture together.
+
+## sections
+
+streampack gives each heading in a post an id that starts with `section-` (streampack#270), so no
+heading can take the name of something else on the page, such as `#comments`. A reader who writes
+`#going-nowhere` expects the heading "Going nowhere", which is `#section-going-nowhere`.
+
+| Export | What it does |
+|---|---|
+| `sectionFor(hash, doc)` | The heading a bare name means, or null: null when the page has an element with that id, when the name is already a section's id, and when no section has it. |
+| `reach(win)` | Goes to that heading, and replaces the address with the heading's own (no new history entry), so `:target` applies and a copied address is the real one. |
+| `follow(win)` | Calls `reach` on load and on each `hashchange`. Returns a function that stops it. |
+| `link(body, { className, headings })` | Puts `<a class="section-link" href="#section-x" aria-label="Link to the section: …">#</a>` at the end of each `h2`, `h3` and `h4` with a section id. A heading that has its link is skipped. Returns how many it added. |
+
+```js
+import { follow, link, reach } from "@streampack-dev/clientjs/sections";
+
+follow(window);
+// Each time a post's body is drawn:
+link(body);
+reach(window);
+```
+
+The site styles `.section-link`, for example shown only while its heading is hovered or the link
+has focus. `annotate` always leaves `.section-link` out of a post's text, so comment anchors still
+match the text the server makes. A site that reads the text with `anchors` itself passes
+`ignore: ".section-link"`.
 
 ## Development
 
