@@ -53,7 +53,7 @@ const EXCERPT = 140;
  * @param {string} options.meta a selector, within a comment, for its meta line.
  * @param {string} [options.author] a selector, within a comment, for its author's name.
  * @param {string} [options.ignore] a selector for what the site adds to a post's body that
- *   isn't its text (`.anchor-marker` is always left out).
+ *   isn't its text (`.anchor-marker` and `.section-link` are always left out).
  * @param {number} [options.marginRem] the room, in rem, the callouts need to the right of the
  *   post's container: 16 if not given.
  * @param {string} [options.linkClass] classes to add to "Show the passage" links.
@@ -65,7 +65,7 @@ const EXCERPT = 140;
 export function annotate(options) {
   const doc = options.document || globalThis.document;
   const win = doc.defaultView || globalThis;
-  const ignore = ['.anchor-marker', options.ignore].filter(Boolean).join(', ');
+  const ignore = ['.anchor-marker', '.section-link', options.ignore].filter(Boolean).join(', ');
   const marginRem = options.marginRem ?? 16;
   const refuse = options.refuse || (() => {});
   const authorSel = options.author || null;

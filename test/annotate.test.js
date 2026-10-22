@@ -359,6 +359,20 @@ describe('writing', () => {
     assert.equal(art().querySelector('.anchor-ask').hidden, true);
   });
 
+  it('leaves a heading\'s section link out of the quote', async () => {
+    page().setUp(art());
+    const link = doc.createElement('a');
+    link.className = 'section-link';
+    link.href = '#section-gamma';
+    link.textContent = '#';
+    art().querySelector('.article-body p:nth-child(2)').append(link);
+    select('plain', 'Beta');
+    await frames();
+    doc.querySelector('[data-anchor-ask]').click();
+
+    assert.equal(art().querySelector('[data-anchor-field="exact"]').value, 'plain, with a link. Beta');
+  });
+
   it('takes the quote out again', async () => {
     page().setUp(art());
     select('Delta');
