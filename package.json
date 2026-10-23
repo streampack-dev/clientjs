@@ -1,7 +1,7 @@
 {
   "name": "@streampack-dev/clientjs",
   "version": "0.2.5",
-  "description": "Browser code that streampack's front ends share: comment anchors and their interface, Mermaid diagrams, the reader's time zone, the Atlas map, and links to a post's sections",
+  "description": "Browser code that streampack's front ends share: comment anchors and their interface, Mermaid diagrams, the reader's time zone, the Atlas map, links to a post's sections, and a post's share text for other networks",
   "license": "MIT",
   "type": "module",
   "exports": {
@@ -28,6 +28,10 @@
     "./sections": {
       "types": "./src/sections.d.ts",
       "default": "./src/sections.js"
+    },
+    "./share": {
+      "types": "./src/share.d.ts",
+      "default": "./src/share.js"
     }
   },
   "files": [
