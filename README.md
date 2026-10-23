@@ -17,6 +17,7 @@ end keeps its own markup, styles and forms, and calls these for what must be the
 | [`zone`](#zone) | The reader's time zone: the `bcn-tz` cookie, times said again in it, and date fields moved to it, in each site's own words. |
 | [`mermaid`](#mermaid) | An editor preview's Mermaid diagrams, drawn with Pele into the markup the API writes (streampack#252). |
 | [`sections`](#sections) | Links to a post's sections (streampack#274): a bare `#name` finds its `section-` heading, and each heading gets a `#` link. |
+| [`share`](#share) | A post's "Share to" menu: BCN's share text, and buttons that copy it and open X's, LinkedIn's or Facebook's share page. |
 
 These are the parts [ui-pudl#252](https://github.com/streampack-dev/ui-pudl/issues/252) planned.
 
@@ -263,6 +264,52 @@ The site styles `.section-link`, for example shown only while its heading is hov
 has focus. `annotate` always leaves `.section-link` out of a post's text, so comment anchors still
 match the text the server makes. A site that reads the text with `anchors` itself passes
 `ignore: ".section-link"`.
+
+## share
+
+A post's "Share to" menu (clientjs#15). The reader copies BCN's text for the post and pastes it
+into the network's own share page, editing it there as that network needs. There are no accounts,
+tokens or network APIs: each network's page is a plain address.
+
+The text is the post's excerpt (its dek), unchanged, between "From BCN:" and its plain address:
+
+```text
+From BCN:
+
+Angular gets debounce APIs. When to use them, and when not to.
+
+https://bytecode.news/posts/2026/10/debounce-apis
+```
+
+| Export | What it does |
+|---|---|
+| `shareText({ dek, url }, { from })` | The text. Without a dek, "From BCN:" and the address. `from` names another site. |
+| `NETWORKS` | X, LinkedIn and Facebook, in menu order: `{ id, name, page(text, url) }`. |
+| `network(id)` | The network with that id, or null. |
+| `pageFor(id, text, url)` | The network's share page. X's takes the whole text; LinkedIn's and Facebook's take only the address, so the reader pastes the copied text there. |
+| `shareTo(page, text, win)` | Starts copying the text, then opens the page in a new tab (`noopener`), in that order and without waiting, so both happen inside the click. Resolves to whether it copied; when the clipboard API refuses or is missing, it copies with a selected textarea. |
+| `wire(root, { onShare })` | Makes each `a[data-share-to]` in a `[data-share]` copy that container's `[data-share-text]` (a textarea's current value, or an element's text) and open its own `href`. Modified clicks and other buttons are left to the browser. `onShare({ network, copied, text })` is told after each, for a "Copied" message. Returns a function that stops it. |
+
+The site writes the menu, with each link's `href` from `pageFor`, so without script each button is
+still a link to the network's page:
+
+```html
+<div data-share>
+  <textarea data-share-text readonly>From BCN: …</textarea>
+  <a data-share-to="x" href="https://x.com/intent/post?text=…" target="_blank" rel="noopener">X</a>
+  <a data-share-to="linkedin" href="https://www.linkedin.com/sharing/share-offsite/?url=…" target="_blank" rel="noopener">LinkedIn</a>
+  <a data-share-to="facebook" href="https://www.facebook.com/sharer/sharer.php?u=…" target="_blank" rel="noopener">Facebook</a>
+</div>
+```
+
+```js
+import { wire } from "@streampack-dev/clientjs/share";
+
+wire(document, { onShare: ({ copied }) => say(copied ? "Copied" : "Couldn't copy: select the text and copy it") });
+```
+
+A front end that renders on the JVM (ui-pudl) writes the same three addresses itself; this
+module's tests pin their form.
 
 ## Development
 
