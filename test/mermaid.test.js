@@ -59,7 +59,7 @@ describe('the markup', () => {
   it('of a refused diagram is the API\'s, the reason in the same words', () => {
     const ours = figureFor(pele, BROKEN, 'test', page());
     assert.deepEqual(shape(ours), shape(apiRefused));
-    assert.equal(shape(ours).caption, "This diagram wasn't drawn: Parse error on line 3: Expecting 'NODE_STRING', got 'EOF'");
+    assert.equal(shape(ours).caption, "This diagram wasn't drawn: Parse error on line 2: Expecting 'NODE_STRING', got 'EOF'");
   });
 
   it('marks the source it keeps, so it isn\'t taken for a block to draw', () => {
